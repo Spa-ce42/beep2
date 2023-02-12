@@ -3,7 +3,6 @@ package com.github.spa_ce42.beep2.logic;
 import com.github.spa_ce42.beep2.util.Triple;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -44,10 +43,6 @@ public class Space {
         for(Point p : sc.getExits()) {
             this.value[p.x][p.y][p.z] = EXT;
         }
-    }
-
-    public int get(int x, int y, int z) {
-        return this.value[x][y][z];
     }
 
     public List<Point> reconstructPath(HashMap<Point, Point> cameFrom, Point current) {

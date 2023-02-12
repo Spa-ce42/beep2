@@ -23,7 +23,6 @@ import org.lwjgl.system.MemoryUtil;
 
 import java.util.List;
 
-import static com.github.spa_ce42.beep2.logic.Space.OBS;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_A;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_D;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_F;
@@ -39,6 +38,7 @@ import static org.lwjgl.opengl.GL43.glDebugMessageCallback;
 public class Main implements ApplicationLogic {
     private static final Vector3f UP = new Vector3f(0, 1, 0);
     private final float scale = 0.25f;
+    private final int setupPointer = 3;
     private Space space;
     private List<Point> bees;
     private List<Point> exits;
@@ -46,17 +46,23 @@ public class Main implements ApplicationLogic {
     private boolean ended = false;
     private Entity lastDrawnPath;
     private Entity lastDrawnNeighborsThatAreObstacles;
-    private final int setupPointer = 3;
     private int beePointer = 0;
+    private final float cameraPitchLimit = 1.57f;
 
-    private Entity drawObstaclesFromPointList(Scene scene, Space space, List<Point> points, float scale, float red, float green, float blue, float alpha) {
+    public static void main(String[] args) {
+        Configuration c = new Configuration();
+        c.windowTitle = "Beep 2";
+        c.ups = 10;
+        c.fps = 60;
+        Engine engine = new Engine(c, new Main());
+        engine.run();
+        engine.clean();
+    }
+
+    private Entity drawObstaclesFromPointList(Scene scene, List<Point> points, float scale, float red, float green, float blue, float alpha) {
         LineEntityBuilder leb = new LineEntityBuilder();
 
         for(Point point : points) {
-            if(space.get(point.x, point.y, point.z) != OBS) {
-                continue;
-            }
-
             float nx = point.x * scale;
             float ny = point.y * scale;
             float nz = point.z * scale;
@@ -71,13 +77,23 @@ public class Main implements ApplicationLogic {
         return leb.build(scene);
     }
 
-    private Entity drawCubesFromPointList(Scene scene, List<Point> points, float scale, float red, float green, float blue, float alpha) {
+    private Entity drawCubesFromPointList(Scene scene, Space space, List<Point> points, float scale, float red, float green, float blue, float alpha, boolean alertAboutObstacles) {
         GeometryEntityBuilder geb = new GeometryEntityBuilder();
 
         for(Point point : points) {
             float nx = point.x * scale;
             float ny = point.y * scale;
             float nz = point.z * scale;
+
+            if(alertAboutObstacles && !space.isValidEmptyCoordinates(point.x, point.y, point.z)) {
+                geb.addCubeVerticesTwoPoints(
+                        nx, ny, nz,
+                        nx + scale, ny + scale, nz + scale,
+                        1, 0, 0, 1
+                );
+
+                continue;
+            }
 
             geb.addCubeVerticesTwoPoints(
                     nx, ny, nz,
@@ -110,8 +126,8 @@ public class Main implements ApplicationLogic {
         exits = sc.getExits();
         bees = sc.getBees();
 
-        this.drawCubesFromPointList(scene, this.exits, this.scale, 0.2f, 0.8f, 0.3f, 1);
-        this.drawCubesFromPointList(scene, this.bees, this.scale, 0.9f, 0.9f, 0.1f, 1);
+        this.drawCubesFromPointList(scene, this.space, this.exits, this.scale, 0.2f, 0.8f, 0.3f, 1, false);
+        this.drawCubesFromPointList(scene, this.space, this.bees, this.scale, 0.9f, 0.9f, 0.1f, 1, false);
 
         this.space = new Space(sc);
         this.space.aStarPrepare(bees.get(this.beePointer), exits.get(this.beePointer));
@@ -123,8 +139,6 @@ public class Main implements ApplicationLogic {
         renderer.addRenderable(new GeometryRenderer());
         window.setVisible(true);
     }
-
-    private float cameraPitchLimit = 1.57f;
 
     @Override
     public void input(Window window, Scene scene, float deltaMillis) {
@@ -197,7 +211,7 @@ public class Main implements ApplicationLogic {
         float yaw = camera.getYaw();
         float pitch = camera.getPitch();
 
-        String s = "Program - " + ", x: " + position.x + ", y: " + position.y + ", z: " + position.z + ", yaw: " + yaw + ", pitch: " + pitch;
+        String s = "Beep 2 | x: " + position.x + ", y: " + position.y + ", z: " + position.z + ", yaw: " + yaw + ", pitch: " + pitch + ", bee " + this.beePointer;
 
         if(!ended) {
             Triple<List<Point>, List<Point>, Boolean> p = this.space.aStarStep();
@@ -213,19 +227,19 @@ public class Main implements ApplicationLogic {
                 scene.removeModel(this.lastDrawnNeighborsThatAreObstacles.getModelId());
             }
 
-            this.lastDrawnPath = this.drawCubesFromPointList(scene, p.x(), this.scale, 0.2f, 0.3f, 0.8f, 1);
-            this.lastDrawnNeighborsThatAreObstacles = this.drawObstaclesFromPointList(scene, this.space, p.y(), this.scale, 0.8f, 0.2f, 0.3f, 1);
+            this.lastDrawnPath = this.drawCubesFromPointList(scene, this.space, p.x(), this.scale, 0.2f, 0.3f, 0.8f, 1, true);
+            this.lastDrawnNeighborsThatAreObstacles = this.drawObstaclesFromPointList(scene, p.y(), this.scale, 0.8f, 0.2f, 0.3f, 1);
         }
 
         if(ended) {
-            if(this.beePointer < 15) {
-                ++this.beePointer;
-                this.space.aStarPrepare(this.bees.get(this.beePointer), this.exits.get(this.beePointer));
-                this.ended = false;
-            }
+            ++this.beePointer;
+
             if(this.beePointer >= 15) {
-                s = s + " (ended)";
+                this.beePointer = 0;
             }
+
+            this.space.aStarPrepare(this.bees.get(this.beePointer), this.exits.get(this.beePointer));
+            this.ended = false;
         }
 
         window.setTitle(s);
@@ -234,14 +248,5 @@ public class Main implements ApplicationLogic {
     @Override
     public void clean() {
 
-    }
-
-    public static void main(String[] args) {
-        Configuration c = new Configuration();
-        c.ups = 10;
-        c.fps = 60;
-        Engine engine = new Engine(c, new Main());
-        engine.run();
-        engine.clean();
     }
 }
