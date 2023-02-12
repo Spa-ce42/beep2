@@ -46,7 +46,7 @@ public class Main implements ApplicationLogic {
     private boolean ended = false;
     private Entity lastDrawnPath;
     private Entity lastDrawnNeighborsThatAreObstacles;
-    private final int setupPointer = 2;
+    private final int setupPointer = 3;
     private int beePointer = 0;
 
     private Entity drawObstaclesFromPointList(Scene scene, Space space, List<Point> points, float scale, float red, float green, float blue, float alpha) {

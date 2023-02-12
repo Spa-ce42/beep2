@@ -44,8 +44,6 @@ public class Space {
         for(Point p : sc.getExits()) {
             this.value[p.x][p.y][p.z] = EXT;
         }
-
-        System.out.println(Arrays.deepToString(this.value));
     }
 
     public int get(int x, int y, int z) {
