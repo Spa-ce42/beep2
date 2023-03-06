@@ -7,6 +7,7 @@ import org.millburn.e24feik.beep2.event.MouseInput;
 import org.millburn.e24feik.beep2.scene.Camera;
 import org.millburn.e24feik.beep2.render.Renderer;
 import org.millburn.e24feik.beep2.scene.Scene;
+import org.millburn.e24feik.beep2.util.ColoredPoint;
 import org.millburn.e24feik.beep2.util.Point;
 import org.millburn.e24feik.beep2.render.GeometryRenderer;
 import org.millburn.e24feik.beep2.util.GeometryEntityBuilder;
@@ -36,11 +37,15 @@ public class ComplexBeep implements ApplicationLogic {
     private int width;
     private int height;
     private int length;
-    private List<Point> bees = new ArrayList<>();
-    private List<Point> exits = new ArrayList<>();
-    private List<Point> obstacles = new ArrayList<>();
     private Vector2f lastMousePos;
     private Scene scene;
+
+    private final List<Point> bees = new ArrayList<>();
+    private final List<Point> exits = new ArrayList<>();
+    private final List<Point> obstacles = new ArrayList<>();
+    private final TemporaryPoints temporaryPoints = new TemporaryPoints();
+
+    private Entity lastTempEntity;
 
     public void setScale(float scale) {
         this.scale = scale;
@@ -123,6 +128,24 @@ public class ComplexBeep implements ApplicationLogic {
                     nx + scale, ny + scale, nz + scale,
                     red, green, blue, alpha
             );
+        }
+
+        return geb.build(scene);
+    }
+
+    private Entity drawCubesFromTemporaryPoints(Scene scene, float scale) {
+        if(this.temporaryPoints.got()) {
+            return null;
+        }
+
+        GeometryEntityBuilder geb = new GeometryEntityBuilder();
+
+        for(ColoredPoint cp : this.temporaryPoints.getPoints()) {
+            float nx = cp.x * scale;
+            float ny = cp.x * scale;
+            float nz = cp.x * scale;
+
+            geb.addCubeVerticesTwoPoints(nx, ny, nz, nx + scale, ny + scale, nz + scale, cp.r, cp.g, cp.b, cp.a);
         }
 
         return geb.build(scene);
@@ -232,7 +255,11 @@ public class ComplexBeep implements ApplicationLogic {
 
         String s = "Beep 2 | x: " + position.x + ", y: " + position.y + ", z: " + position.z + ", yaw: " + yaw + ", pitch: " + pitch;
 
+        Entity e = this.drawCubesFromTemporaryPoints(scene, this.scale);
 
+        if(e != null) {
+            this.lastTempEntity = e;
+        }
 
         window.setTitle(s);
     }
@@ -240,5 +267,13 @@ public class ComplexBeep implements ApplicationLogic {
     @Override
     public void clean() {
 
+    }
+
+    public void addPoint(int x, int y, int z, float r, float g, float b, float a) {
+        this.temporaryPoints.addPoint(x, y, z, r, g, b, a);
+    }
+
+    public void flushPoints() {
+        this.temporaryPoints.flushPoints();
     }
 }

@@ -8,6 +8,7 @@ public final class Beep {
     private static final Configuration configuration;
     private static Engine engine;
     private static ComplexBeep complexBeep;
+    private static Thread t;
 
     private Beep() {
         throw new AssertionError();
@@ -80,8 +81,16 @@ public final class Beep {
     }
 
     public static void show() {
-        engine = new Engine(configuration, complexBeep);
-        engine.run();
+        t = new Thread(() -> {
+            engine = new Engine(configuration, complexBeep);
+            engine.run();
+        });
+
+        t.start();
+    }
+
+    public static void addPoint(int x, int y, int z, float r, float g, float b, float a) {
+        complexBeep.addPoint(x, y, z, r, g, b, a);
     }
 
     public static void end() {
@@ -90,5 +99,9 @@ public final class Beep {
 
     static {
         configuration = new Configuration();
+    }
+
+    public static void flushPoints() {
+        complexBeep.flushPoints();
     }
 }

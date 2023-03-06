@@ -36,6 +36,8 @@ public class Demo {
         //endregion
 
         Beep.show();
-        Beep.end();
+
+        Beep.addPoint(0, 0, 0, 1, 0, 0, 1);
+        Beep.flushPoints();
     }
 }

@@ -1,6 +1,5 @@
 package org.millburn.e24feik.beep2.util;
 
-@SuppressWarnings("ClassCanBeRecord")
 public class Point {
     public final int x;
     public final int y;
